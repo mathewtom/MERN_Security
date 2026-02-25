@@ -1,0 +1,51 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: mern-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongo-data:/data/db
+      - ./mongo/init:/docker-entrypoint-initdb.d 
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+  
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile 
+    container_name: mern-server
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    volumes:
+      - ./server/src:/app/src 
+      - /app/node_modules
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      MONGO_URI: ${MONGO_URI}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN}
+      SERVER_PORT: ${SERVER_PORT}
+      CLIENT_URL: ${CLIENT_URL}
+    depends_on:
+      - mongo
+  client:
+    build: 
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: mern_client
+    restart: unless-stopped
+    ports:
+      - "${CLIENT_PORT}:${CLIENT_PORT}"
+    volumes:
+      - ./client/src:/app/src
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:${SERVER_PORT}/api
+    depends_on:
+    - server 
+    
