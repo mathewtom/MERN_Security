@@ -1,28 +1,43 @@
 import express from 'express';
-import cors from 'cors';
-
-const PORT = process.env.SERVER_PORT || 5000;
+import { config } from './config/env.js';
+import { connectDatabase } from './config/db.js';
 
 const app = express();
 
-//--Middleware-----
-
 app.use(express.json());
-app.use(cors({
-    origin: process.env.CLIENT_URL,
-    credentials: true,
-}));
 
-// Health Check
-app.get('/api/health', (_req, res) => (
+//Routes
+
+app.get('/api/health', async (_req, res) => {
+
+    const mongoose = await import('mongoose');
+    const dbState = mongoose.default.connection.readyState;
+    //0 (Disconnected), 1 (Connected), 2 (Connecting), 3 (Disconnecting)
+
+    //Creating dbStatus that is Human Readable
+    const dbStatus = {
+        0: 'Disconnected',
+        1: 'Connected',
+        2: 'Connecting',
+        3: 'Disconnecting'
+    }[dbState] || 'unknown';
+
     res.json({
-        status: 'ok',
+        status: dbStatus,
         timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV,
-    })
-));
+    });
+});
 
-//Start Server
-app.listen(PORT, () => {
-    console.log(`server running on port ${PORT} [${process.env.NODE_ENV}]`);
+async function Bootstrap() {
+    await connectDatabase(); //Connect to MongoDB
+    app.listen(config.port, () => {
+        console.log(`Server Running on port ${config.port}`);
+        console.log(`Environment: ${config.nodeEnv}`);
+        console.log(`Wellness Check: http://localhost:${config.port}/api/health`);
+    });
+};
+
+Bootstrap().catch((error) => {
+    console.error('Server failed to start');
+    process.exit(1);
 });
