@@ -1,10 +1,15 @@
 import express from 'express';
 import { config } from './config/env.js';
 import { connectDatabase } from './config/db.js';
+import cookieParser from 'cookie-parser';
+import authRoutes from './routes/authRoutes.js';
+import errorHandler from './middleware/errorHandler.js';
 
 const app = express();
 
-app.use(express.json());
+app.use(express.json({limit: '10kb'}));
+app.use(cookieParser());
+
 
 //Routes
 
@@ -27,6 +32,12 @@ app.get('/api/health', async (_req, res) => {
         timestamp: new Date().toISOString(),
     });
 });
+
+app.use('/api/auth', authRoutes);
+app.all('*', (req,res,next) => {
+    next(new AppError(`Cannot find ${req.method} ${req.originalUrl}`,404));
+});
+app.use(errorHandler);
 
 async function Bootstrap() {
     await connectDatabase(); //Connect to MongoDB
