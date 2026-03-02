@@ -4,6 +4,9 @@ import { connectDatabase } from './config/db.js';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/authRoutes.js';
 import errorHandler from './middleware/errorHandler.js';
+import userRoutes from './routes/userRoutes.js';
+import AppError from './utils/AppError.js';
+
 
 const app = express();
 
@@ -34,6 +37,8 @@ app.get('/api/health', async (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+
 app.all('*', (req,res,next) => {
     next(new AppError(`Cannot find ${req.method} ${req.originalUrl}`,404));
 });

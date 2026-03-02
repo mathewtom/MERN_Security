@@ -3,7 +3,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import jwt from 'jsonwebtoken';
 
 import User from '../models/User.js';
-import config from '../config/env.js';
+import { config } from '../config/env.js';
 import AppError from '../utils/AppError.js';
 
 //Hash with SHA-256
