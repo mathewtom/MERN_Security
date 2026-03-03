@@ -19,8 +19,8 @@ const refreshTokenSchema = new mongoose.Schema(
             type: Date,
             required: true,
         },
-    }.
-        { _id: false};
+    },
+        { _id: false}
 );
 
 //User Schema
@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema(
             type: String,
             required: [true, 'Email Required'],
             unique: true, //MongoDB forces unique email
-            lowertrue: true, //sends all email to lowercase (prevents case differences)
+            lowercase: true, //sends all email to lowercase (prevents case differences)
             trim: true, //removes whitespaces
             match: [
                 /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
@@ -41,15 +41,15 @@ const userSchema = new mongoose.Schema(
         password: {
             type: String,
             required: [true, 'Password Required'],
-            minlength: [MIN_PASSWORD_LENGTH, 'Password must be at least ${MIN_PASSWORD_LENGTH} characters'],
-            maxlength: [MAX_PASSWORD_LENGTH, 'Password must be less than ${MAX_PASSWORD_LENGTH} characters'],
+            minlength: [MIN_PASSWORD_LENGTH, `Password must be at least ${MIN_PASSWORD_LENGTH} characters`],
+            maxlength: [MAX_PASSWORD_LENGTH, `Password must be less than ${MAX_PASSWORD_LENGTH} characters`],
             select: false //Security Control; ensures that this field is excluded from queries (unless explicity asked)
         },
         firstName: {
             type: String,
             required: [true, 'First Name is required'],
             trim: true,
-            maxlength: [50, 'First Name should be less than '],
+            maxlength: [50, 'First Name should be less than 50 characters'],
         },
         lastName: {
             type: String,
@@ -61,7 +61,7 @@ const userSchema = new mongoose.Schema(
             type: String,
             enum: {
                 values: VALID_ROLES,
-                message: 'Role must be one of :{VALUE}',
+                message: `Role must be one of: {VALUE}`,
             },
             default: 'user',
         },
