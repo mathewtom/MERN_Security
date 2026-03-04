@@ -24,9 +24,28 @@ A full-stack MERN application built with a security-first mindset, demonstrating
 - **`path: '/api/auth'`** — Cookie scoped to auth endpoints only — [`authController.js`](server/src/controllers/authController.js)
 
 ### Input Validation & Mass Assignment Prevention
+- **Zod schema validation** — Request bodies validated and stripped of unknown fields using `.strict()` before reaching business logic — [`validate.js`](server/src/middleware/validate.js)
+- **Auth endpoint schemas** — Registration enforces password complexity (uppercase, lowercase, number, special character); login schema is intentionally lenient to avoid leaking policy — [`authValidators.js`](server/src/validators/authValidators.js)
+- **Profile update schema** — `.partial().strict().refine()` ensures only whitelisted fields are accepted and at least one field is present — [`userValidators.js`](server/src/validators/userValidators.js)
 - **Schema-level validation** — Email regex, field length limits, trimming, and case normalization at the Mongoose layer — [`User.js`](server/src/models/User.js)
 - **Field whitelist for updates** — Only explicitly allowed fields (`firstName`, `lastName`) can be modified; prevents role/email/password tampering — [`userService.js`](server/src/services/userService.js)
+- **NoSQL injection sanitization** — Recursive stripping of `$` operators and dot-notation keys from `req.body`, `req.query`, and `req.params` — [`sanitize.js`](server/src/middleware/sanitize.js)
 - **Request body size limit** — `express.json({ limit: '10kb' })` to prevent large payload attacks — [`index.js`](server/src/index.js)
+
+### HTTP Security Headers
+- **Helmet integration** — Sets `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, and other protective headers out of the box — [`securityHeaders.js`](server/src/middleware/securityHeaders.js)
+- **Content Security Policy** — Restricts script, style, and image sources to `'self'` only — [`securityHeaders.js`](server/src/middleware/securityHeaders.js)
+- **HSTS in production** — HTTP Strict Transport Security header enforced only in production — [`securityHeaders.js`](server/src/middleware/securityHeaders.js)
+
+### Rate Limiting
+- **Global rate limiter** — 100 requests per 15-minute window across all endpoints — [`rateLimiter.js`](server/src/middleware/rateLimiter.js)
+- **Auth-specific rate limiter** — Tighter 20-request limit on `/api/auth`; skips successful requests to only penalize failed attempts — [`rateLimiter.js`](server/src/middleware/rateLimiter.js)
+- **Standard rate limit headers** — Exposes `RateLimit-Limit`, `RateLimit-Remaining`, and `RateLimit-Reset` headers to clients — [`index.js`](server/src/index.js)
+
+### Logging & Sensitive Data Exclusion
+- **Structured logging with Pino** — JSON-formatted logs in production; human-readable in development — [`requestLogger.js`](server/src/middleware/requestLogger.js)
+- **Sensitive data excluded from logs** — Request headers, body, and params intentionally omitted from log serializers to prevent credential leakage — [`requestLogger.js`](server/src/middleware/requestLogger.js)
+- **Health check suppression** — `/api/health` requests excluded from logs to reduce noise — [`requestLogger.js`](server/src/middleware/requestLogger.js)
 
 ### Error Handling & Information Disclosure
 - **Environment-aware error responses** — Full stack traces in development; sanitized generic messages in production — [`errorHandler.js`](server/src/middleware/errorHandler.js)

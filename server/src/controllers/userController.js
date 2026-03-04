@@ -12,7 +12,7 @@ function catchAsync(fn) {
 
 //Function to get user's own profile:
 export const getMe = catchAsync(async (req,res) => {
-    const user = await getService.getOwnProfile(req.user.id);
+    const user = await userService.getOwnProfile(req.user.id);
 
     res.status(200).json({
         status: 'success',
