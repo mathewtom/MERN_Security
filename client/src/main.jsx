@@ -1,8 +1,18 @@
+// =============================================================================
+// Entry Point — client/src/main.jsx
+// =============================================================================
+
+
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import { AuthProvider } from './context/AuthContext.jsx';
+import App from './App.jsx';
+import './index.css';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <h1>MERN Auth — Client Running</h1>
+    <AuthProvider>
+      <App />
+    </AuthProvider>
   </React.StrictMode>
 );
