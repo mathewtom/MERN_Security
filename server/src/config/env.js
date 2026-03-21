@@ -60,6 +60,38 @@ const envSchema = [
     },
 
     {
+        envKey: 'GTM_CONTAINER_ID',
+        configKey: 'gtmContainerId',
+        required: false,
+        default: '',
+        type: 'string',
+    },
+
+    {
+        envKey: 'STRIPE_SECRET_KEY',
+        configKey: 'stripeSecretKey',
+        required: false,
+        default: '',
+        type: 'string',
+    },
+
+    {
+        envKey: 'STRIPE_PUBLISHABLE_KEY',
+        configKey: 'stripePublishableKey',
+        required: false,
+        default: '',
+        type: 'string',
+    },
+
+    {
+        envKey: 'STRIPE_WEBHOOK_SECRET',
+        configKey: 'stripeWebhookSecret',
+        required: false,
+        default: '',
+        type: 'string',
+    },
+
+    {
         envKey: 'CLIENT_URL',
         configKey: 'clientUrl',
         required: false,

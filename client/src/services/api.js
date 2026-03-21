@@ -172,3 +172,13 @@ export async function updateMeAPI(updates) {
 export async function listUsersAPI() {
   return authenticatedRequest('/users');
 }
+
+// Payment endpoints
+
+export async function getStripeConfigAPI() {
+  return request('/payments/config', { skipAuth: true });
+}
+
+export async function createPaymentIntentAPI() {
+  return authenticatedRequest('/payments/create-intent', { method: 'POST' });
+}

@@ -39,13 +39,27 @@ A full-stack MERN application built with a security-first mindset, demonstrating
 - **Request body size limit** — `express.json({ limit: '10kb' })` to prevent large payload attacks — [`index.js`](server/src/index.js)
 
 ### HTTP Security Headers & Content Security Policy
-- **Helmet integration** — Sets `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, and other protective headers out of the box — [`securityHeaders.js`](server/src/middleware/securityHeaders.js)
-- **Content Security Policy with third-party allowlists** — CSP configured to allow specific external sources while blocking everything else — [`securityHeaders.js`](server/src/middleware/securityHeaders.js)
-  - `script-src`: `'self'` + `cdnjs.cloudflare.com` (day.js CDN)
-  - `style-src`: `'self'` + `fonts.googleapis.com` (Google Fonts CSS)
-  - `font-src`: `'self'` + `fonts.gstatic.com` (Google Fonts files)
-  - `img-src`: `'self'` + `www.gravatar.com` (profile avatars)
+- **Dynamic per-request nonce generation** — Cryptographic nonce generated for each request, injected into CSP header and HTML script tags in production — [`securityHeaders.js`](server/src/middleware/securityHeaders.js)
+- **`strict-dynamic` in production** — Nonce-trusted scripts can load child scripts without explicit allowlisting; host allowlists kept as fallback for older browsers — [`securityHeaders.js`](server/src/middleware/securityHeaders.js)
+- **Multi-domain CSP with 6 directives** — CSP configured for multiple third-party integrations — [`securityHeaders.js`](server/src/middleware/securityHeaders.js)
+  - `script-src`: `'self'` + `cdnjs.cloudflare.com` (day.js) + `googletagmanager.com` (GTM) + `js.stripe.com` (Stripe)
+  - `style-src`: `'self'` + `'unsafe-inline'` (Stripe Elements) + `fonts.googleapis.com`
+  - `font-src`: `'self'` + `fonts.gstatic.com`
+  - `frame-src`: `'self'` + `js.stripe.com` (3D Secure) + `hooks.stripe.com` + `googletagmanager.com`
+  - `connect-src`: `'self'` + `api.stripe.com` + `google-analytics.com`
+  - `img-src`: `'self'` + `gravatar.com` + `googletagmanager.com` + `*.stripe.com`
+- **CSP violation reporting** — Browsers send violation reports to `POST /api/csp-report`; stored in MongoDB with 30-day TTL auto-cleanup — [`cspController.js`](server/src/controllers/cspController.js), [`CspReport.js`](server/src/models/CspReport.js)
+- **Admin CSP report viewer** — `GET /api/csp-reports` with pagination and filtering by directive or blocked URI — [`cspController.js`](server/src/controllers/cspController.js)
+- **Dev vs production CSP modes** — Development uses `'unsafe-inline'`/`'unsafe-eval'` for Vite HMR compatibility; production uses nonce + `strict-dynamic` — [`securityHeaders.js`](server/src/middleware/securityHeaders.js)
+- **Production SPA serving with nonce injection** — Express serves built React app, injecting per-request nonces into all `<script>` tags via template replacement — [`index.js`](server/src/index.js)
+- **Google Tag Manager integration** — GTM container script with nonce support and CSP-compliant dynamic loading — [`index.html`](client/index.html)
 - **HSTS in production** — HTTP Strict Transport Security header enforced only in production — [`securityHeaders.js`](server/src/middleware/securityHeaders.js)
+
+### Stripe Payment Integration
+- **PaymentIntent-based checkout** — Server creates PaymentIntents, client confirms with Stripe Elements; card data never touches the server — [`paymentService.js`](server/src/services/paymentService.js), [`UpgradeCard.jsx`](client/src/components/UpgradeCard.jsx)
+- **Stripe webhook verification** — Raw body signature verification using `stripe.webhooks.constructEvent()` with dedicated webhook secret — [`paymentController.js`](server/src/controllers/paymentController.js)
+- **Webhook before JSON parser** — Webhook route registered before `express.json()` to preserve raw body for signature verification — [`index.js`](server/src/index.js)
+- **Plan vs role separation** — Billing tier (`plan: free/premium`) kept separate from authorization role (`role: user/admin`) — [`User.js`](server/src/models/User.js)
 
 ### Rate Limiting
 - **Global rate limiter** — 100 requests per 15-minute window across all endpoints — [`rateLimiter.js`](server/src/middleware/rateLimiter.js)

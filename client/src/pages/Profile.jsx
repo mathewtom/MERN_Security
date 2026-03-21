@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getMeAPI, updateMeAPI } from '../services/api.js';
+import UpgradeCard from '../components/UpgradeCard.jsx';
 
 // Gravatar avatar — CSP: img-src https://www.gravatar.com
 function simpleHash(str) {
@@ -196,6 +197,12 @@ export default function Profile() {
               <span style={styles.badge}>{profile.role}</span>
             </div>
             <div style={styles.profileRow}>
+              <span style={styles.label}>Plan</span>
+              <span style={profile.plan === 'premium' ? styles.premiumBadge : styles.badge}>
+                {profile.plan || 'free'}
+              </span>
+            </div>
+            <div style={styles.profileRow}>
               <span style={styles.label}>Member Since</span>
               <span style={styles.value}>
                 {new Date(profile.createdAt).toLocaleDateString()}
@@ -208,6 +215,21 @@ export default function Profile() {
           </>
         )}
       </div>
+
+      {/* Upgrade section — Stripe Elements (CSP: script-src, frame-src, connect-src) */}
+      {profile && profile.plan !== 'premium' && (
+        <UpgradeCard onSuccess={() => {
+          getMeAPI().then((data) => setProfile(data.data.user));
+          setSuccess('Upgraded to Premium!');
+        }} />
+      )}
+
+      {profile?.plan === 'premium' && (
+        <div style={styles.premiumCard}>
+          <span style={styles.premiumBadge}>Premium</span>
+          <span style={styles.value}> You're on the premium plan</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -334,5 +356,23 @@ const styles = {
     color: '#888',
     textAlign: 'center',
     padding: '2rem',
+  },
+  premiumBadge: {
+    backgroundColor: '#1a472a',
+    color: '#2ecc70',
+    padding: '0.15rem 0.5rem',
+    borderRadius: '4px',
+    fontSize: '0.85rem',
+    fontWeight: 'bold',
+  },
+  premiumCard: {
+    backgroundColor: '#16213e',
+    padding: '1.25rem',
+    borderRadius: '8px',
+    marginTop: '1.5rem',
+    border: '1px solid #2ecc7044',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
   },
 };

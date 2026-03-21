@@ -65,6 +65,14 @@ const userSchema = new mongoose.Schema(
             },
             default: 'user',
         },
+        plan: {
+            type: String,
+            enum: ['free', 'premium'],
+            default: 'free',
+        },
+        upgradedAt: {
+            type: Date,
+        },
         refreshTokens: [refreshTokenSchema],
     },
     {
