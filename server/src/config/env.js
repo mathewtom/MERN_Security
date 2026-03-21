@@ -53,6 +53,13 @@ const envSchema = [
     },
 
     {
+        envKey: 'CSRF_SECRET',
+        configKey: 'csrfSecret',
+        required: true,
+        type: 'string',
+    },
+
+    {
         envKey: 'CLIENT_URL',
         configKey: 'clientUrl',
         required: false,

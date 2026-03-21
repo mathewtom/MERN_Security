@@ -1,17 +1,8 @@
-// =============================================================================
-// Register Page — client/src/pages/Register.jsx
-// =============================================================================
-// Same controlled-component pattern as Login, but with more fields.
-// On success, automatically logs the user in (the server returns tokens
-// on registration — see authService.registerUser on the backend).
-// =============================================================================
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 
 export default function Register() {
-  // ---- FORM STATE ----
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -25,29 +16,6 @@ export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  // --------------------------------------------------------------------------
-  // GENERIC CHANGE HANDLER
-  // --------------------------------------------------------------------------
-  // Instead of writing a separate onChange for each field (5 fields = 5
-  // setters), we use ONE handler that reads the input's `name` attribute
-  // to know which field to update.
-  //
-  // HOW IT WORKS:
-  //   <input name="email" onChange={handleChange} />
-  //
-  //   e.target.name  → "email"
-  //   e.target.value → "user@example.com"
-  //
-  // We spread the existing formData and overwrite just the changed field:
-  //   { ...formData, [e.target.name]: e.target.value }
-  //
-  // The [e.target.name] syntax is called a COMPUTED PROPERTY NAME.
-  // It uses the VALUE of e.target.name as the key. Without the brackets,
-  // JavaScript would literally use the string "e.target.name" as the key.
-  //
-  //   { [variable]: value }  → { email: "user@example.com" }
-  //   { variable: value }    → { variable: "user@example.com" }  ← WRONG
-  // --------------------------------------------------------------------------
   function handleChange(e) {
     setFormData((prev) => ({
       ...prev,
@@ -55,13 +23,10 @@ export default function Register() {
     }));
   }
 
-  // ---- FORM SUBMIT ----
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
 
-    // Client-side validation: check passwords match BEFORE hitting the server.
-    // This saves a round trip and gives instant feedback.
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match.');
       return;
@@ -76,11 +41,8 @@ export default function Register() {
         formData.firstName,
         formData.lastName
       );
-      // Registration succeeded — server returned tokens → user is logged in
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      // The server returns validation errors like "Email Already Exists" or
-      // "Password must contain at least one uppercase letter"
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
       setSubmitting(false);
@@ -95,7 +57,6 @@ export default function Register() {
         {error && <div style={styles.error}>{error}</div>}
 
         <form onSubmit={handleSubmit}>
-          {/* First & Last Name — side by side */}
           <div style={styles.row}>
             <div style={styles.fieldHalf}>
               <label htmlFor="firstName" style={styles.label}>First Name</label>
@@ -195,9 +156,6 @@ export default function Register() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// MINIMAL STYLES
-// ---------------------------------------------------------------------------
 const styles = {
   container: {
     display: 'flex',

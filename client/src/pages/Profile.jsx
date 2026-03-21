@@ -1,34 +1,31 @@
-// =============================================================================
-// Profile Page — client/src/pages/Profile.jsx
-// =============================================================================
-// Protected page that lets users view and update their profile (firstName
-// and lastName only — matching the server's ALLOWED_UPDATED_FIELDS whitelist).
-//
-// DEMONSTRATES:
-//   - Fetching data on mount
-//   - Edit mode toggle (view vs edit)
-//   - PATCH request with the API service layer
-//   - Optimistic-ish update (we refresh from server after success)
-// =============================================================================
-
 import { useState, useEffect } from 'react';
 import { getMeAPI, updateMeAPI } from '../services/api.js';
 
+// Gravatar avatar — CSP: img-src https://www.gravatar.com
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(16);
+}
+
+function getGravatarUrl(email, size = 80) {
+  const hash = simpleHash(email.trim().toLowerCase());
+  return `https://www.gravatar.com/avatar/${hash}?d=identicon&s=${size}`;
+}
+
 export default function Profile() {
-  // ---- STATE ----
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Edit mode state
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({ firstName: '', lastName: '' });
   const [saving, setSaving] = useState(false);
 
-  // --------------------------------------------------------------------------
-  // FETCH PROFILE ON MOUNT
-  // --------------------------------------------------------------------------
   useEffect(() => {
     let isMounted = true;
 
@@ -57,9 +54,6 @@ export default function Profile() {
     return () => { isMounted = false; };
   }, []);
 
-  // --------------------------------------------------------------------------
-  // HANDLE EDIT FORM CHANGE
-  // --------------------------------------------------------------------------
   function handleChange(e) {
     setFormData((prev) => ({
       ...prev,
@@ -67,14 +61,6 @@ export default function Profile() {
     }));
   }
 
-  // --------------------------------------------------------------------------
-  // HANDLE SAVE
-  // --------------------------------------------------------------------------
-  // Sends PATCH /api/users/me with { firstName, lastName }.
-  // The server validates with the updateProfileSchema (Zod) and the
-  // userService whitelist, so even if someone tampered with the request
-  // body, they can't change role, email, etc.
-  // --------------------------------------------------------------------------
   async function handleSave(e) {
     e.preventDefault();
     setError('');
@@ -82,7 +68,6 @@ export default function Profile() {
     setSaving(true);
 
     try {
-      // Only send fields that actually changed to minimize the request
       const updates = {};
       if (formData.firstName !== profile.firstName) {
         updates.firstName = formData.firstName;
@@ -91,7 +76,6 @@ export default function Profile() {
         updates.lastName = formData.lastName;
       }
 
-      // If nothing changed, don't make the request
       if (Object.keys(updates).length === 0) {
         setEditing(false);
         setSaving(false);
@@ -109,9 +93,6 @@ export default function Profile() {
     }
   }
 
-  // --------------------------------------------------------------------------
-  // CANCEL EDIT — reset form to current profile values
-  // --------------------------------------------------------------------------
   function handleCancel() {
     setFormData({
       firstName: profile.firstName,
@@ -121,7 +102,6 @@ export default function Profile() {
     setError('');
   }
 
-  // ---- LOADING STATE ----
   if (loading) {
     return (
       <div style={styles.container}>
@@ -130,7 +110,6 @@ export default function Profile() {
     );
   }
 
-  // ---- ERROR STATE (couldn't load profile at all) ----
   if (!profile) {
     return (
       <div style={styles.container}>
@@ -148,7 +127,6 @@ export default function Profile() {
 
       <div style={styles.card}>
         {editing ? (
-          // ---- EDIT MODE ----
           <form onSubmit={handleSave}>
             <div style={styles.field}>
               <label htmlFor="firstName" style={styles.label}>First Name</label>
@@ -192,8 +170,15 @@ export default function Profile() {
             </div>
           </form>
         ) : (
-          // ---- VIEW MODE ----
           <>
+            <div style={styles.avatarRow}>
+              <img
+                src={getGravatarUrl(profile.email, 120)}
+                alt="Profile avatar"
+                style={styles.avatar}
+              />
+            </div>
+
             <div style={styles.profileRow}>
               <span style={styles.label}>First Name</span>
               <span style={styles.value}>{profile.firstName}</span>
@@ -227,9 +212,6 @@ export default function Profile() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// MINIMAL STYLES
-// ---------------------------------------------------------------------------
 const styles = {
   container: {
     maxWidth: '600px',
@@ -245,6 +227,17 @@ const styles = {
     padding: '1.5rem',
     borderRadius: '8px',
     boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
+  },
+  avatarRow: {
+    display: 'flex',
+    justifyContent: 'center',
+    marginBottom: '1.5rem',
+  },
+  avatar: {
+    width: '120px',
+    height: '120px',
+    borderRadius: '50%',
+    border: '3px solid #0f3460',
   },
   profileRow: {
     display: 'flex',

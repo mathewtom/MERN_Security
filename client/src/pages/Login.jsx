@@ -1,73 +1,28 @@
-// =============================================================================
-// Login Page — client/src/pages/Login.jsx
-// =============================================================================
-// Handles the login form, calls the auth context's login function, and
-// redirects on success.
-//
-// REACT PATTERN: CONTROLLED COMPONENTS
-// ======================================
-// There are two ways to handle form inputs in React:
-//
-//   1. UNCONTROLLED: The DOM owns the value. You read it with refs.
-//      <input ref={emailRef} />
-//      const email = emailRef.current.value;
-//
-//   2. CONTROLLED: React state owns the value. The input just reflects it.
-//      const [email, setEmail] = useState('');
-//      <input value={email} onChange={(e) => setEmail(e.target.value)} />
-//
-// We use CONTROLLED because:
-//   - We can validate in real-time as the user types
-//   - The form state is always in sync with what's displayed
-//   - It's the React-recommended approach
-//   - It enables easy state manipulation (like clearing the form)
-//
-// TRADEOFF: More boilerplate (useState + onChange for every field).
-// For complex forms, libraries like React Hook Form reduce this.
-// =============================================================================
-
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 
 export default function Login() {
-  // ---- FORM STATE ----
-  // Each input field gets its own state variable
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // ---- HOOKS ----
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Where to redirect after login. If the user was trying to access a
-  // protected page (e.g., /profile) and got redirected to /login,
-  // ProtectedRoute saved the original location in state.from.
-  // After login, we send them back there instead of always to /dashboard.
   const from = location.state?.from?.pathname || '/dashboard';
 
-  // ---- FORM SUBMIT HANDLER ----
   async function handleSubmit(e) {
-    // preventDefault stops the browser's default form behavior, which is
-    // to do a full page reload and send data as URL-encoded form params.
-    // We want to handle this in JavaScript with our API service instead.
     e.preventDefault();
-
-    // Clear any previous error
     setError('');
     setSubmitting(true);
 
     try {
       await login(email, password);
-      // Success! Redirect to the intended page.
-      // replace: true so the login page isn't in the browser history
-      // (pressing back after login won't take you to the login form)
       navigate(from, { replace: true });
     } catch (err) {
-      // Show the server's error message (e.g., "Invalid email or password")
       setError(err.message || 'Login failed. Please try again.');
     } finally {
       setSubmitting(false);
@@ -79,12 +34,8 @@ export default function Login() {
       <div style={styles.card}>
         <h1 style={styles.title}>Login</h1>
 
-        {/* ERROR DISPLAY */}
-        {/* Short-circuit rendering: only show if error is truthy */}
         {error && <div style={styles.error}>{error}</div>}
 
-        {/* THE FORM */}
-        {/* onSubmit fires when the user presses Enter or clicks the button */}
         <form onSubmit={handleSubmit}>
           <div style={styles.field}>
             <label htmlFor="email" style={styles.label}>Email</label>
@@ -122,7 +73,6 @@ export default function Login() {
               opacity: submitting ? 0.6 : 1,
             }}
           >
-            {/* Dynamic button text based on state */}
             {submitting ? 'Logging in...' : 'Login'}
           </button>
         </form>
@@ -136,9 +86,6 @@ export default function Login() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// MINIMAL STYLES — will be replaced with Tailwind later
-// ---------------------------------------------------------------------------
 const styles = {
   container: {
     display: 'flex',

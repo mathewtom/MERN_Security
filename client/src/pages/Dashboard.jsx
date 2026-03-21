@@ -1,37 +1,19 @@
-// =============================================================================
-// Dashboard Page — client/src/pages/Dashboard.jsx
-// =============================================================================
-// This is a PROTECTED page (only accessible when logged in, enforced by
-// the ProtectedRoute wrapper in App.jsx).
-//
-// It demonstrates:
-//   1. Reading user data from auth context (available immediately)
-//   2. Making an authenticated API call (GET /api/users/me)
-//   3. Handling loading and error states for API calls
-//
-// WHY TWO SOURCES OF USER DATA?
-// The auth context has user info from the login/register response, which is
-// available instantly. But you might also want to fetch FRESH data from the
-// server (maybe another device updated the profile). This page shows both
-// approaches.
-// =============================================================================
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth.js';
 import { getMeAPI } from '../services/api.js';
+
+// day.js loaded from CDN (index.html) — available as window.dayjs
+const dayjs = window.dayjs;
+
+if (dayjs && window.dayjs_plugin_relativeTime) {
+  dayjs.extend(window.dayjs_plugin_relativeTime);
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [fetchError, setFetchError] = useState('');
 
-  // --------------------------------------------------------------------------
-  // FETCH FRESH PROFILE DATA FROM SERVER
-  // --------------------------------------------------------------------------
-  // useEffect with [] runs once on mount. This makes an authenticated
-  // GET /api/users/me request. The authenticatedRequest function in api.js
-  // handles attaching the access token and refreshing if needed.
-  // --------------------------------------------------------------------------
   useEffect(() => {
     let isMounted = true;
 
@@ -49,17 +31,13 @@ export default function Dashboard() {
     }
 
     fetchProfile();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
   return (
     <div style={styles.container}>
       <h1 style={styles.title}>Dashboard</h1>
 
-      {/* User info from AUTH CONTEXT (immediate, from login response) */}
       <div style={styles.card}>
         <h2 style={styles.cardTitle}>Welcome, {user?.firstName}!</h2>
         <p style={styles.text}>
@@ -70,7 +48,6 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* User info from API CALL (fresh from server) */}
       <div style={styles.card}>
         <h2 style={styles.cardTitle}>Server Profile Data</h2>
         {fetchError && <p style={styles.error}>{fetchError}</p>}
@@ -90,7 +67,11 @@ export default function Dashboard() {
               <span style={styles.badge}>{profile.role}</span>
             </p>
             <p style={styles.textMuted}>
-              Account created: {new Date(profile.createdAt).toLocaleDateString()}
+              Account created:{' '}
+              {dayjs
+                ? `${dayjs(profile.createdAt).fromNow()} (${dayjs(profile.createdAt).format('MMM D, YYYY')})`
+                : new Date(profile.createdAt).toLocaleDateString()
+              }
             </p>
           </div>
         )}
@@ -99,9 +80,6 @@ export default function Dashboard() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// MINIMAL STYLES
-// ---------------------------------------------------------------------------
 const styles = {
   container: {
     maxWidth: '700px',

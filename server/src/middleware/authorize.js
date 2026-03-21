@@ -12,7 +12,7 @@ function authorize(...roles) {
             );
         }
     
-        if(!roles.includes(req.user)) {
+        if(!roles.includes(req.user.role)) {
             return next(
                 new AppError ('You do not have permission', 403)
             );

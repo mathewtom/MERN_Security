@@ -1,13 +1,16 @@
-// =============================================================================
-// API Service Layer — client/src/services/api.js
-// =============================================================================
-
 const API_BASE = import.meta.env.VITE_API_URL;
 
-// ---------------------------------------------------------------------------
-// IN-MEMORY TOKEN STORAGE
-// ---------------------------------------------------------------------------
+// CSRF — read token from cookie, send in X-CSRF-Token header
+function getCsrfToken() {
+  const match = document.cookie.match(/(^| )csrf-token=([^;]+)/);
+  return match ? match[2] : null;
+}
 
+export async function initCsrf() {
+  await fetch(`${API_BASE}/csrf-token`, { credentials: 'include' });
+}
+
+// In-memory token storage
 let accessToken = null;
 
 export function getAccessToken() {
@@ -22,58 +25,42 @@ export function clearAccessToken() {
   accessToken = null;
 }
 
-// ---------------------------------------------------------------------------
-// REFRESH LOCK — prevents multiple simultaneous refresh requests
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
+// Refresh lock — prevents multiple simultaneous refresh requests
 let refreshPromise = null;
 
-// ---------------------------------------------------------------------------
-// LOGOUT CALLBACK — set by AuthContext so api.js can trigger a full logout
-// ---------------------------------------------------------------------------
-
+// Logout callback — set by AuthContext so api.js can trigger a full logout
 let logoutCallback = null;
 
 export function registerLogoutCallback(fn) {
   logoutCallback = fn;
 }
 
-// ---------------------------------------------------------------------------
-// CORE REQUEST FUNCTION
-// ---------------------------------------------------------------------------
-// Every API call goes through this function. It handles:
-//   1. Building the full URL from a relative path
-//   2. Setting JSON headers
-//   3. Attaching the access token (if we have one)
-//   4. Sending cookies (credentials: 'include') for the refresh token
-//   5. Parsing the JSON response
-//   6. Throwing on error responses so callers can catch
-// ---------------------------------------------------------------------------
+// Core request function
 async function request(endpoint, options = {}) {
   const {
     method = 'GET',
     body = null,
     headers = {},
-    // skipAuth lets us make requests without the access token
-    // (used for login, register, and the refresh call itself)
     skipAuth = false,
   } = options;
 
-  // --- Build headers ---
   const requestHeaders = {
     'Content-Type': 'application/json',
     ...headers,
   };
 
-  // Attach access token if we have one and this isn't a skipAuth request
   if (!skipAuth && accessToken) {
     requestHeaders['Authorization'] = `Bearer ${accessToken}`;
   }
 
-  // --- Make the request ---
-  // credentials: 'include' tells the browser to send cookies (httpOnly
-  // refresh token) with cross-origin requests. 
+  // Attach CSRF token on state-changing requests
+  if (method !== 'GET') {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      requestHeaders['X-CSRF-Token'] = csrfToken;
+    }
+  }
+
   const response = await fetch(`${API_BASE}${endpoint}`, {
     method,
     headers: requestHeaders,
@@ -81,12 +68,9 @@ async function request(endpoint, options = {}) {
     credentials: 'include',
   });
 
-  // --- Handle the response ---
-  
   const data = await response.json();
 
   if (!response.ok) {
-    // Throw an error object that includes the server's message and status
     const error = new Error(data.message || 'Request failed');
     error.status = response.status;
     error.data = data;
@@ -96,57 +80,40 @@ async function request(endpoint, options = {}) {
   return data;
 }
 
-// ---------------------------------------------------------------------------
-// AUTHENTICATED REQUEST — adds automatic 401 retry with token refresh
-// ---------------------------------------------------------------------------
-
+// Authenticated request — auto-retries with token refresh on 401
 async function authenticatedRequest(endpoint, options = {}) {
   try {
     return await request(endpoint, options);
   } catch (error) {
-    // Only attempt refresh on 401 (Unauthorized / expired token)
     if (error.status !== 401) {
       throw error;
     }
 
-    // ---- TOKEN REFRESH LOGIC ----
     try {
-      // If no refresh is in progress, start one
       if (!refreshPromise) {
         refreshPromise = request('/auth/refresh', {
           method: 'POST',
-          skipAuth: true, // Don't attach the expired access token
+          skipAuth: true,
         });
       }
 
-      // Wait for the refresh to complete 
       const refreshData = refreshPromise;
       const result = await refreshData;
-
-      // Store the new access token
       setAccessToken(result.data.accessToken);
-
-      // Retry the ORIGINAL request with the fresh token
       return await request(endpoint, options);
     } catch (refreshError) {
-      // Refresh failed — session is dead
       clearAccessToken();
       if (logoutCallback) {
         logoutCallback();
       }
       throw refreshError;
     } finally {
-      // Clear the refresh promise so future 401s can try again
       refreshPromise = null;
     }
   }
 }
 
-// ---------------------------------------------------------------------------
-// PUBLIC API METHODS — what the rest of the app imports and uses
-// ---------------------------------------------------------------------------
-
-// --- Auth endpoints (no access token needed) ---
+// Auth endpoints (no access token needed)
 
 export async function loginAPI(email, password) {
   const data = await request('/auth/login', {
@@ -154,7 +121,6 @@ export async function loginAPI(email, password) {
     body: { email, password },
     skipAuth: true,
   });
-  // Store the access token we just received
   setAccessToken(data.data.accessToken);
   return data;
 }
@@ -165,7 +131,6 @@ export async function registerAPI(email, password, firstName, lastName) {
     body: { email, password, firstName, lastName },
     skipAuth: true,
   });
-  // Store the access token we just received
   setAccessToken(data.data.accessToken);
   return data;
 }
@@ -177,8 +142,7 @@ export async function logoutAPI() {
       skipAuth: true,
     });
   } catch {
-    // Even if the server call fails, we still want to clear local state.
-    
+    // Clear local state even if server call fails
   }
   clearAccessToken();
 }
@@ -192,7 +156,7 @@ export async function refreshAPI() {
   return data;
 }
 
-// --- Protected user endpoints (access token required, auto-refresh) ---
+// Protected user endpoints (access token required, auto-refresh)
 
 export async function getMeAPI() {
   return authenticatedRequest('/users/me');

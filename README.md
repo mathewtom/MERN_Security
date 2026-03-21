@@ -17,6 +17,12 @@ A full-stack MERN application built with a security-first mindset, demonstrating
 - **Timing-safe comparison** — `bcrypt.compare()` prevents timing attacks during login — [`User.js`](server/src/models/User.js)
 - **Password excluded from queries by default** — `select: false` on the password field; must be explicitly requested — [`User.js`](server/src/models/User.js)
 
+### CSRF Protection
+- **Signed double-submit cookie pattern** — Server generates HMAC-signed CSRF tokens; client reads from cookie and echoes in `X-CSRF-Token` header — [`csrf.js`](server/src/middleware/csrf.js)
+- **HMAC signature verification** — Tokens are signed with a server-side secret, preventing subdomain cookie injection attacks — [`csrf.js`](server/src/middleware/csrf.js)
+- **Timing-safe token comparison** — `crypto.timingSafeEqual()` prevents timing attacks on CSRF validation — [`csrf.js`](server/src/middleware/csrf.js)
+- **Automatic CSRF initialization** — Client fetches CSRF token on app startup before any state-changing requests — [`AuthContext.jsx`](client/src/context/AuthContext.jsx)
+
 ### Cookie Hardening
 - **`httpOnly: true`** — Refresh token cookie inaccessible to JavaScript (XSS mitigation) — [`authController.js`](server/src/controllers/authController.js)
 - **`secure: true` in production** — Cookie only sent over HTTPS — [`authController.js`](server/src/controllers/authController.js)
@@ -32,9 +38,13 @@ A full-stack MERN application built with a security-first mindset, demonstrating
 - **NoSQL injection sanitization** — Recursive stripping of `$` operators and dot-notation keys from `req.body`, `req.query`, and `req.params` — [`sanitize.js`](server/src/middleware/sanitize.js)
 - **Request body size limit** — `express.json({ limit: '10kb' })` to prevent large payload attacks — [`index.js`](server/src/index.js)
 
-### HTTP Security Headers
+### HTTP Security Headers & Content Security Policy
 - **Helmet integration** — Sets `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, and other protective headers out of the box — [`securityHeaders.js`](server/src/middleware/securityHeaders.js)
-- **Content Security Policy** — Restricts script, style, and image sources to `'self'` only — [`securityHeaders.js`](server/src/middleware/securityHeaders.js)
+- **Content Security Policy with third-party allowlists** — CSP configured to allow specific external sources while blocking everything else — [`securityHeaders.js`](server/src/middleware/securityHeaders.js)
+  - `script-src`: `'self'` + `cdnjs.cloudflare.com` (day.js CDN)
+  - `style-src`: `'self'` + `fonts.googleapis.com` (Google Fonts CSS)
+  - `font-src`: `'self'` + `fonts.gstatic.com` (Google Fonts files)
+  - `img-src`: `'self'` + `www.gravatar.com` (profile avatars)
 - **HSTS in production** — HTTP Strict Transport Security header enforced only in production — [`securityHeaders.js`](server/src/middleware/securityHeaders.js)
 
 ### Rate Limiting

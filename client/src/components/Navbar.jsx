@@ -1,12 +1,3 @@
-// =============================================================================
-// Navigation — client/src/components/Navbar.jsx
-// =============================================================================
-// Conditional rendering based on auth state:
-//   - Logged OUT → show Login and Register links
-//   - Logged IN  → show Dashboard, Profile, and Logout button
-//
-
-
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 
@@ -14,7 +5,6 @@ export default function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // Handle logout: call the context's logout function, then redirect
   async function handleLogout() {
     await logout();
     navigate('/login');
@@ -22,15 +12,12 @@ export default function Navbar() {
 
   return (
     <nav style={styles.nav}>
-      {/* Left side: app name/link */}
       <Link to="/" style={styles.brand}>
         MERN Auth
       </Link>
 
-      {/* Right side: conditional links */}
       <div style={styles.links}>
         {isAuthenticated ? (
-          // ---- LOGGED IN ----
           <>
             <Link to="/dashboard" style={styles.link}>
               Dashboard
@@ -46,7 +33,6 @@ export default function Navbar() {
             </button>
           </>
         ) : (
-          // ---- LOGGED OUT ----
           <>
             <Link to="/login" style={styles.link}>
               Login
@@ -60,10 +46,6 @@ export default function Navbar() {
     </nav>
   );
 }
-
-// ---------------------------------------------------------------------------
-// INLINE STYLES — minimal but functional
-// ---------------------------------------------------------------------------
 
 const styles = {
   nav: {

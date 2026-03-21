@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import { requestLogger, logger } from './middleware/requestLogger.js';
 import { globalLimiter, authLimiter } from './middleware/rateLimiter.js';
 import mongoSanitize from './middleware/sanitize.js';
+import { csrfSetToken, csrfProtect } from './middleware/csrf.js';
 
 // Routes
 import authRoutes from './routes/authRoutes.js';
@@ -22,7 +23,7 @@ app.use(globalLimiter);
 app.use(cors({
     origin: config.clientUrl,
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
     exposedHeaders: ['RateLimit-Limit', 'RateLimit-Remaining', 'RateLimit-Reset'],
     credentials: true,
     maxAge: 600,
@@ -30,6 +31,14 @@ app.use(cors({
 app.use(express.json({limit: '10kb'}));
 app.use(cookieParser());
 app.use(mongoSanitize);
+
+
+// CSRF token endpoint — client calls this on startup to get the cookie
+app.get('/api/csrf-token', csrfSetToken);
+
+// CSRF validation on ALL state-changing requests (POST, PATCH, DELETE)
+// Must come AFTER cookie-parser (needs to read cookies) and BEFORE routes
+app.use(csrfProtect);
 
 
 //Routes
